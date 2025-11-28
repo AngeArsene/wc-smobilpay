@@ -5,14 +5,14 @@ class WC_Gateway_MTN_MoMo extends WC_Payment_Gateway
 
     private $api;
 
-    public $merchant_key;
-    public $secret;
-    public $payment_item;
+    private $merchant_key;
+    private $secret_key;
+    private $payment_item;
 
     public function __construct()
     {
         $this->id = 'mtn_momo';
-        $this->icon = '';
+        $this->icon = plugins_url('mtn_momo.png', __FILE__);
         $this->has_fields = true;
         $this->method_title = 'MTN Mobile Money';
         $this->method_description = 'Accept payments via MTN Mobile Money through Smobilpay';
@@ -28,11 +28,11 @@ class WC_Gateway_MTN_MoMo extends WC_Payment_Gateway
         $this->description = $this->get_option('description');
         $this->enabled = $this->get_option('enabled');
         $this->merchant_key = $this->get_option('merchant_key');
-        $this->secret = $this->get_option('secret');
+        $this->secret_key = $this->get_option('secret_key');
         $this->payment_item = $this->get_option('payment_item', '20053');
 
-        if ($this->merchant_key && $this->secret) {
-            $this->api = new WC_Smobilpay_API($this->merchant_key, $this->secret);
+        if ($this->merchant_key && $this->secret_key) {
+            $this->api = new WC_Smobilpay_API($this->merchant_key, $this->secret_key);
         }
 
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
@@ -64,13 +64,13 @@ class WC_Gateway_MTN_MoMo extends WC_Payment_Gateway
             'merchant_key' => array(
                 'title' => 'Merchant Key',
                 'type' => 'text',
-                'description' => 'Your Smobilpay merchant key',
+                'description' => 'Your Smobilpay Public key',
                 'desc_tip' => true,
             ),
-            'secret' => array(
+            'secret_key' => array(
                 'title' => 'Secret Key',
-                'type' => 'text',
-                'description' => 'Your Maviance PLC Secret Key',
+                'type' => 'password',
+                'description' => 'Your Maviance Smobilpay Secret key',
                 'desc_tip' => true,
             ),
             'payment_item' => array(
@@ -93,7 +93,7 @@ class WC_Gateway_MTN_MoMo extends WC_Payment_Gateway
                 <label for="mtn_phone_number">MTN Phone Number <span class="required">*</span></label>
                 <input type="tel" id="mtn_phone_number" name="mtn_phone_number"
                     placeholder="237xxxxxxxxx" pattern="237[0-9]{9}"
-                    maxlength="12" required />
+                    maxlength="12" value="237" required />
                 <small>Format: 237xxxxxxxxx (Cameroon)</small>
             </p>
         </fieldset>

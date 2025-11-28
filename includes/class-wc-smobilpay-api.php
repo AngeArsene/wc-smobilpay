@@ -10,13 +10,13 @@ class WC_Smobilpay_API
 
     private $api_url = 'https://s3p.smobilpay.staging.maviance.info/v2';
     private $merchant_key;
-    private $secret; // S3P secret
+    private $secret_key; // S3P secret_key
     private $client;
 
-    public function __construct($merchant_key, $secret)
+    public function __construct($merchant_key, $secret_key)
     {
         $this->merchant_key = $merchant_key;
-        $this->secret = $secret;
+        $this->secret_key = $secret_key;
         $this->client = new Client(); // Guzzle client
     }
 
@@ -60,7 +60,7 @@ class WC_Smobilpay_API
             . rawurlencode($url) . "&"
             . rawurlencode($parameterString);
 
-        $signature = base64_encode(hash_hmac('sha1', $baseString, $this->secret, true));
+        $signature = base64_encode(hash_hmac('sha1', $baseString, $this->secret_key, true));
 
         return "s3pAuth "
             . "s3pAuth_timestamp=\"{$timestamp}\", "

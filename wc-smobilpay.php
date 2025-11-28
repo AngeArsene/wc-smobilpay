@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: WooCommerce Smobilpay Gateway
- * Plugin URI: https://yoursite.com
+ * Plugin URI: https://ange-arsene.is-a.dev
  * Description: Accept MTN Mobile Money and Orange Money payments via Smobilpay S3P API
  * Version: 1.0.0
- * Author: Your Name
- * Author URI: https://yoursite.com
+ * Author: Ange Arsene
+ * Author URI: https://ange-arsene.is-a.dev
  * Text Domain: wc-smobilpay
  * Domain Path: /languages
  * Requires at least: 5.8

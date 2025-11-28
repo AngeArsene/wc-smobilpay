@@ -5,14 +5,14 @@ class WC_Gateway_Orange_Money extends WC_Payment_Gateway
 
     private $api;
 
-    public $merchant_key;
-    public $service_number;
-    public $payment_item;
+    private $merchant_key;
+    private $secret_key;
+    private $payment_item;
 
     public function __construct()
     {
         $this->id = 'orange_money';
-        $this->icon = '';
+        $this->icon = plugins_url('orange_money.png', __FILE__);
         $this->has_fields = true;
         $this->method_title = 'Orange Money';
         $this->method_description = 'Accept payments via Orange Money through Smobilpay';
@@ -28,11 +28,11 @@ class WC_Gateway_Orange_Money extends WC_Payment_Gateway
         $this->description = $this->get_option('description');
         $this->enabled = $this->get_option('enabled');
         $this->merchant_key = $this->get_option('merchant_key');
-        $this->service_number = $this->get_option('service_number');
+        $this->secret_key = $this->get_option('secret_key');
         $this->payment_item = $this->get_option('payment_item', '20053');
 
-        if ($this->merchant_key && $this->service_number) {
-            $this->api = new WC_Smobilpay_API($this->merchant_key, $this->service_number);
+        if ($this->merchant_key && $this->secret_key) {
+            $this->api = new WC_Smobilpay_API($this->merchant_key, $this->secret_key);
         }
 
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
@@ -63,20 +63,20 @@ class WC_Gateway_Orange_Money extends WC_Payment_Gateway
             'merchant_key' => array(
                 'title' => 'Merchant Key',
                 'type' => 'text',
-                'description' => 'Your Smobilpay merchant key',
+                'description' => 'Your Smobilpay Public key',
                 'desc_tip' => true,
             ),
-            'service_number' => array(
-                'title' => 'Service Number',
-                'type' => 'text',
-                'description' => 'Your Orange Money service number',
+            'secret_key' => array(
+                'title' => 'Secret Key',
+                'type' => 'password',
+                'description' => 'Your Maviance Smobilpay Secret key',
                 'desc_tip' => true,
             ),
             'payment_item' => array(
                 'title' => 'Payment Item',
                 'type' => 'text',
                 'description' => 'Service Code For Orange Money API Service',
-                'default' => '20053'
+                'default' => '30053'
             ),
         );
     }
@@ -92,7 +92,7 @@ class WC_Gateway_Orange_Money extends WC_Payment_Gateway
                 <label for="orange_phone_number">Orange Phone Number <span class="required">*</span></label>
                 <input type="tel" id="orange_phone_number" name="orange_phone_number"
                     placeholder="237xxxxxxxxx" pattern="237[0-9]{9}"
-                    maxlength="12" required />
+                    maxlength="12" value="237" required />
                 <small>Format: 237xxxxxxxxx (Cameroon)</small>
             </p>
         </fieldset>
@@ -130,7 +130,7 @@ class WC_Gateway_Orange_Money extends WC_Payment_Gateway
             return array('result' => 'failure');
         }
 
-        $payable_item_id = $payable_result['data']['payItemId'] ?? null;
+        $payable_item_id = $payable_result['data'][0]['payItemId'] ?? null;
 
         if (!$payable_item_id) {
             wc_add_notice('Could not retrieve payment item ID', 'error');
@@ -141,12 +141,8 @@ class WC_Gateway_Orange_Money extends WC_Payment_Gateway
 
         // Step 2: Initiate transaction
         $quote_data = array(
-            'quoteAmountType' => 'CASHOUT',
             'payItemId' => $payable_item_id,
-            'cashoutAmount' => floatval($order->get_total()),
-            'cashoutCur' => 'XAF',
-            'customerNumber' => $phone,
-            'merchantTransId' => strval($order_id),
+            'amount' => (int) $order->get_total(),
         );
 
         $quote_result = $this->api->initiate_transaction($quote_data);
@@ -167,8 +163,13 @@ class WC_Gateway_Orange_Money extends WC_Payment_Gateway
 
         // Step 3: Finalize transaction
         $collect_data = array(
-            'quoteId' => $quote_id,
-            'customerNumber' => $phone,
+            "quoteId" => $quote_id,
+            "customerPhonenumber" => $phone,
+            "customerEmailaddress" => $order->get_billing_email(),
+            "customerName" => $order->get_billing_last_name(),
+            "customerAddress" => $order->get_billing_address_1(),
+            "serviceNumber" => $phone,
+            "trid" => (string) random_int($order_id, PHP_INT_MAX)
         );
 
         $collect_result = $this->api->finalize_transaction($collect_data);

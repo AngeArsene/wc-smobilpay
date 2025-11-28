@@ -137,8 +137,6 @@ class WC_Smobilpay_API {
             ];
         }
 
-        error_log($data['message']);
-
         return [
             'success' => false,
             'message' => 'Error: '.$data['message'] ?? 'API request failed',

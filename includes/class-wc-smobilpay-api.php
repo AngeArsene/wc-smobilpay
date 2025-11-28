@@ -5,14 +5,15 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request;
 
-class WC_Smobilpay_API {
+class WC_Smobilpay_API
+{
 
     private $api_url = 'https://s3p.smobilpay.staging.maviance.info/v2';
     private $merchant_key;
     private $secret; // S3P secret
     private $client;
 
-    public function __construct($merchant_key, $secret) 
+    public function __construct($merchant_key, $secret)
     {
         $this->merchant_key = $merchant_key;
         $this->secret = $secret;
@@ -29,7 +30,7 @@ class WC_Smobilpay_API {
         array $bodyParams = []
     ) {
         $timestamp = round(microtime(true) * 1000);
-        $nonce = $timestamp;
+        $nonce     = round(microtime(true) * 1000);
 
         $s3pParams = [
             "s3pAuth_nonce" => $nonce,
@@ -46,9 +47,18 @@ class WC_Smobilpay_API {
 
         ksort($params);
 
-        $parameterString = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+        // ❗ Match Postman's non-encoded style
+        $parameterString = implode('&', array_map(
+            fn($k, $v) => $k . '=' . $v,
+            array_keys($params),
+            $params
+        ));
+
         $url = rtrim($this->api_url, '/') . '/' . ltrim($path, '/');
-        $baseString = $method . "&" . rawurlencode($url) . "&" . rawurlencode($parameterString);
+
+        $baseString = $method . "&"
+            . rawurlencode($url) . "&"
+            . rawurlencode($parameterString);
 
         $signature = base64_encode(hash_hmac('sha1', $baseString, $this->secret, true));
 
@@ -60,10 +70,12 @@ class WC_Smobilpay_API {
             . "s3pAuth_token=\"{$this->merchant_key}\"";
     }
 
+
     /**
      * Make GET request
      */
-    private function send_get($path, $queryParams = []) {
+    private function send_get($path, $queryParams = [])
+    {
         $authHeader = $this->generateS3PAuthHeader("GET", $path, $queryParams);
 
         $url = $this->api_url . $path;
@@ -84,7 +96,8 @@ class WC_Smobilpay_API {
     /**
      * Make POST request
      */
-    private function send_post($path, $bodyParams = []) {
+    private function send_post($path, $bodyParams = [])
+    {
         $authHeader = $this->generateS3PAuthHeader("POST", $path, [], $bodyParams);
 
         $request = new Request("POST", $this->api_url . $path, [
@@ -99,28 +112,34 @@ class WC_Smobilpay_API {
 
     // === Public API methods ===
 
-    public function get_payable_item($payment_item) {
+    public function get_payable_item($payment_item)
+    {
         return $this->send_get('/cashout', ['serviceid' => $payment_item]);
     }
 
-    public function get_payment_options($payable_item_id) {
+    public function get_payment_options($payable_item_id)
+    {
         return $this->send_get('/cashout/' . $payable_item_id);
     }
 
-    public function initiate_transaction($quote_data) {
+    public function initiate_transaction($quote_data)
+    {
         return $this->send_post('/quotestd', $quote_data);
     }
 
-    public function finalize_transaction($collect_data) {
+    public function finalize_transaction($collect_data)
+    {
         return $this->send_post('/collectstd', $collect_data);
     }
 
-    public function verify_transaction($ptn) {
+    public function verify_transaction($ptn)
+    {
         return $this->send_get('/verifytx/' . $ptn);
     }
 
     // === Handle API response ===
-    private function handle_response($response) {
+    private function handle_response($response)
+    {
         $body = $response->getBody()->getContents();
         $data = json_decode($body, true);
         $status_code = $response->getStatusCode();
@@ -139,7 +158,7 @@ class WC_Smobilpay_API {
 
         return [
             'success' => false,
-            'message' => 'Error: '.$data['message'] ?? 'API request failed',
+            'message' => 'Error: ' . $data['message'] ?? 'API request failed',
             'data' => $data,
         ];
     }

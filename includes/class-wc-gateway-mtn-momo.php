@@ -170,7 +170,7 @@ class WC_Gateway_MTN_MoMo extends WC_Payment_Gateway
             "customerName" => $order->get_billing_last_name(),
             "customerAddress" => $order->get_billing_address_1(),
             "serviceNumber" => $phone,
-            "trid" => $order_id
+            "trid" => (string) random_int($order_id, PHP_INT_MAX)
         );
 
         $collect_result = $this->api->finalize_transaction($collect_data);

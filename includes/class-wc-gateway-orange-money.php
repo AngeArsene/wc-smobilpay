@@ -1,0 +1,208 @@
+<?php
+
+class WC_Gateway_Orange_Money extends WC_Payment_Gateway
+{
+
+    private $api;
+
+    public $merchant_key;
+    public $service_number;
+    public $payment_item;
+
+    public function __construct()
+    {
+        $this->id = 'orange_money';
+        $this->icon = '';
+        $this->has_fields = true;
+        $this->method_title = 'Orange Money';
+        $this->method_description = 'Accept payments via Orange Money through Smobilpay';
+
+        $this->supports = array(
+            'products',
+        );
+
+        $this->init_form_fields();
+        $this->init_settings();
+
+        $this->title = $this->get_option('title');
+        $this->description = $this->get_option('description');
+        $this->enabled = $this->get_option('enabled');
+        $this->merchant_key = $this->get_option('merchant_key');
+        $this->service_number = $this->get_option('service_number');
+        $this->payment_item = $this->get_option('payment_item', '20053');
+
+        if ($this->merchant_key && $this->service_number) {
+            $this->api = new WC_Smobilpay_API($this->merchant_key, $this->service_number);
+        }
+
+        add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
+    }
+
+    public function init_form_fields()
+    {
+        $this->form_fields = array(
+            'enabled' => array(
+                'title' => 'Enable/Disable',
+                'type' => 'checkbox',
+                'label' => 'Enable Orange Money',
+                'default' => 'no',
+            ),
+            'title' => array(
+                'title' => 'Title',
+                'type' => 'text',
+                'description' => 'Payment method title shown to customers',
+                'default' => 'Orange Money',
+                'desc_tip' => true,
+            ),
+            'description' => array(
+                'title' => 'Description',
+                'type' => 'textarea',
+                'description' => 'Payment method description shown to customers',
+                'default' => 'Pay securely with your Orange Money account',
+            ),
+            'merchant_key' => array(
+                'title' => 'Merchant Key',
+                'type' => 'text',
+                'description' => 'Your Smobilpay merchant key',
+                'desc_tip' => true,
+            ),
+            'service_number' => array(
+                'title' => 'Service Number',
+                'type' => 'text',
+                'description' => 'Your Orange Money service number',
+                'desc_tip' => true,
+            ),
+            'payment_item' => array(
+                'title' => 'Payment Item',
+                'type' => 'text',
+                'description' => 'Service Code For Orange Money API Service',
+                'default' => '20053'
+            ),
+        );
+    }
+
+    public function payment_fields()
+    {
+        if ($this->description) {
+            echo wpautop(wp_kses_post($this->description));
+        }
+?>
+        <fieldset>
+            <p class="form-row form-row-wide">
+                <label for="orange_phone_number">Orange Phone Number <span class="required">*</span></label>
+                <input type="tel" id="orange_phone_number" name="orange_phone_number"
+                    placeholder="237xxxxxxxxx" pattern="237[0-9]{9}"
+                    maxlength="12" required />
+                <small>Format: 237xxxxxxxxx (Cameroon)</small>
+            </p>
+        </fieldset>
+<?php
+    }
+
+    public function validate_fields()
+    {
+        if (empty($_POST['orange_phone_number'])) {
+            wc_add_notice('Phone number is required', 'error');
+            return false;
+        }
+
+        $phone = sanitize_text_field($_POST['orange_phone_number']);
+        if (!preg_match('/^237[0-9]{9}$/', $phone)) {
+            wc_add_notice('Invalid phone number format. Use: 237xxxxxxxxx', 'error');
+            return false;
+        }
+
+        return true;
+    }
+
+    public function process_payment($order_id)
+    {
+        $order = wc_get_order($order_id);
+        $phone = sanitize_text_field($_POST['orange_phone_number']);
+
+        update_post_meta($order_id, '_orange_phone_number', $phone);
+
+        // Step 1: Get payable item ID
+        $payable_result = $this->api->get_payable_item($this->payment_item);
+
+        if (!$payable_result['success']) {
+            wc_add_notice('Payment initialization failed. Please try again.', 'error');
+            return array('result' => 'failure');
+        }
+
+        $payable_item_id = $payable_result['data']['payItemId'] ?? null;
+
+        if (!$payable_item_id) {
+            wc_add_notice('Could not retrieve payment item ID', 'error');
+            return array('result' => 'failure');
+        }
+
+        update_post_meta($order_id, '_smobilpay_payable_item_id', $payable_item_id);
+
+        // Step 2: Initiate transaction
+        $quote_data = array(
+            'quoteAmountType' => 'CASHOUT',
+            'payItemId' => $payable_item_id,
+            'cashoutAmount' => floatval($order->get_total()),
+            'cashoutCur' => 'XAF',
+            'customerNumber' => $phone,
+            'merchantTransId' => strval($order_id),
+        );
+
+        $quote_result = $this->api->initiate_transaction($quote_data);
+
+        if (!$quote_result['success']) {
+            wc_add_notice('Transaction initiation failed: ' . ($quote_result['message'] ?? 'Unknown error'), 'error');
+            return array('result' => 'failure');
+        }
+
+        $quote_id = $quote_result['data']['quoteId'] ?? null;
+
+        if (!$quote_id) {
+            wc_add_notice('Could not retrieve quote ID', 'error');
+            return array('result' => 'failure');
+        }
+
+        update_post_meta($order_id, '_smobilpay_quote_id', $quote_id);
+
+        // Step 3: Finalize transaction
+        $collect_data = array(
+            'quoteId' => $quote_id,
+            'customerNumber' => $phone,
+        );
+
+        $collect_result = $this->api->finalize_transaction($collect_data);
+
+        if (!$collect_result['success']) {
+            wc_add_notice('Payment collection failed: ' . ($collect_result['message'] ?? 'Unknown error'), 'error');
+            return array('result' => 'failure');
+        }
+
+        $ptn = $collect_result['data']['ptn'] ?? null;
+        $status = $collect_result['data']['status'] ?? 'PENDING';
+
+        if ($ptn) {
+            update_post_meta($order_id, '_smobilpay_ptn', $ptn);
+        }
+
+        if ($status === 'PENDING') {
+            $order->update_status('on-hold', 'Awaiting Orange Money payment confirmation');
+            $order->add_order_note(sprintf('Payment initiated. PTN: %s. Waiting for customer to confirm on their phone.', $ptn));
+
+            WC()->cart->empty_cart();
+
+            return array(
+                'result' => 'success',
+                'redirect' => $this->get_return_url($order),
+            );
+        }
+
+        wc_add_notice('Unexpected payment status: ' . $status, 'error');
+        return array('result' => 'failure');
+    }
+
+    public function verify_transaction($ptn)
+    {
+        return $this->api->verify_transaction($ptn);
+    }
+}

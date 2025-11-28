@@ -1,0 +1,12 @@
+{
+    "name": "all-ready237/wc-smobilpay",
+    "authors": [
+        {
+            "name": "Ange Arsene",
+            "email": "nkenmandenga@gmail.com"
+        }
+    ],
+    "require": {
+        "guzzlehttp/guzzle": "^7.10"
+    }
+}

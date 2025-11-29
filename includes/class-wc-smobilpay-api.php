@@ -132,9 +132,9 @@ class WC_Smobilpay_API
         return $this->send_post('/collectstd', $collect_data);
     }
 
-    public function verify_transaction($ptn)
+    public function verify_transaction($trid)
     {
-        return $this->send_get('/verifytx/' . $ptn);
+        return $this->send_get('/verifytx/' . ['trid' => $trid]);
     }
 
     // === Handle API response ===

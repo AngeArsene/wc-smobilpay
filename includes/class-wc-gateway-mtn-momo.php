@@ -92,7 +92,7 @@ class WC_Gateway_MTN_MoMo extends WC_Payment_Gateway
             <p class="form-row form-row-wide">
                 <label for="mtn_phone_number">MTN Phone Number <span class="required">*</span></label>
                 <input type="tel" id="mtn_phone_number" name="mtn_phone_number"
-                    placeholder="237xxxxxxxxx" pattern="237[0-9]{9}"
+                    placeholder="237xxxxxxxxx" pattern="^(237|00237|\\+237)?((650|651|652|653|654|680|681|682|683)\\d{6}$|(67\\d{7}$|(4\\d{10})))$"
                     maxlength="12" value="237" required />
                 <small>Format: 237xxxxxxxxx (Cameroon)</small>
             </p>
@@ -108,7 +108,7 @@ class WC_Gateway_MTN_MoMo extends WC_Payment_Gateway
         }
 
         $phone = sanitize_text_field($_POST['mtn_phone_number']);
-        if (!preg_match('/^237[0-9]{9}$/', $phone)) {
+        if (!preg_match('^(237|00237|\\+237)?((650|651|652|653|654|680|681|682|683)\\d{6}$|(67\\d{7}$|(4\\d{10})))$', $phone)) {
             wc_add_notice('Invalid phone number format. Use: 237xxxxxxxxx', 'error');
             return false;
         }
@@ -170,7 +170,7 @@ class WC_Gateway_MTN_MoMo extends WC_Payment_Gateway
             "customerName" => $order->get_billing_last_name(),
             "customerAddress" => $order->get_billing_address_1(),
             "serviceNumber" => $phone,
-            "trid" => (string) random_int($order_id, PHP_INT_MAX)
+            "trid" => (string) random_int(0, PHP_INT_MAX)
         );
 
         $collect_result = $this->api->finalize_transaction($collect_data);

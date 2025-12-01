@@ -62,11 +62,12 @@ function wc_smobilpay_handle_webhook()
     $raw_post = file_get_contents('php://input');
     $data = json_decode($raw_post, true);
 
-    if (!$data || !isset($data['trid'])) {
+    if (!$data || (!isset($data['trid']) && !isset($data['id']))) {
         wp_die('Invalid webhook data', 'Webhook Error', array('response' => 400));
     }
 
-    $order_id = intval($data['trid']);
+
+    $order_id = intval($data['trid'] ?? $data['id']);
     $order = wc_get_order($order_id);
 
     if (!$order) {
@@ -118,16 +119,22 @@ function wc_smobilpay_handle_webhook()
 
 
     if ($gateway && method_exists($gateway, 'verify_transaction')) {
-        $ptn = get_post_meta($order_id, '_smobilpay_ptn', true);
+        $trid = $order_id;
 
-        if ($ptn) {
-            $result = $gateway->verify_transaction($ptn);
+        if ($trid) {
+            $result = $gateway->verify_transaction($trid);
 
-            if ($result['success'] && $result['data']['status'] === 'SUCCESS' && $result['data']['errorCode'] === '0') {
-                $order->payment_complete($ptn);
-                $order->add_order_note(sprintf('Payment verified via webhook. PTN: %s', $ptn));
-            } else if ($result['success'] && $result['data']['status'] === 'ERRORED') {
-                $order->update_status('failed', $errorMessages[$payment_method][$result['data']['errorCode']]['en']);
+            if (!empty($result)) {
+                file_put_contents(__DIR__ . '/data.json', wp_json_encode($result));
+            }
+
+            var_dump($result['data'][0]['status']);
+            
+            if ($result['success'] && $result['data'][0]['status'] === 'SUCCESS') {
+                $order->payment_complete($trid);
+                $order->add_order_note(sprintf('Payment verified via webhook. trid: %s', $trid));
+            } else if ($result['success'] && $result['data'][0]['status'] === 'ERRORED') {
+                $order->update_status('failed', $errorMessages[$payment_method][$result['data'][0]['errorCode']]['en']);
             }
         }
     }

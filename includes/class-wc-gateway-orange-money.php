@@ -187,7 +187,7 @@ class WC_Gateway_Orange_Money extends WC_Payment_Gateway
         }
 
         if ($status === 'PENDING') {
-            $order->update_status('on-hold', 'Awaiting Orange Money payment confirmation');
+            $order->update_status('pending', 'Awaiting Orange Money payment confirmation');
             $order->add_order_note(sprintf('Payment initiated. trid: %s. Waiting for customer to confirm on their phone.', $trid));
 
             WC()->cart->empty_cart();

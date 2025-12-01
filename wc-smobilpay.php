@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Plugin Name: WooCommerce Smobilpay Gateway
  * Plugin URI: https://ange-arsene.is-a.dev
@@ -30,8 +31,9 @@ define('WC_SMOBILPAY_PLUGIN_PATH', plugin_dir_path(__FILE__));
 // Initialize the gateway
 add_action('plugins_loaded', 'wc_smobilpay_init', 11);
 
-function wc_smobilpay_init() {
-    
+function wc_smobilpay_init()
+{
+
     if (!class_exists('WC_Payment_Gateway')) {
         return;
     }
@@ -45,7 +47,8 @@ function wc_smobilpay_init() {
     add_filter('woocommerce_payment_gateways', 'wc_smobilpay_add_gateways');
 }
 
-function wc_smobilpay_add_gateways($gateways) {
+function wc_smobilpay_add_gateways($gateways)
+{
     $gateways[] = 'WC_Gateway_MTN_MoMo';
     $gateways[] = 'WC_Gateway_Orange_Money';
     return $gateways;
@@ -54,15 +57,16 @@ function wc_smobilpay_add_gateways($gateways) {
 // Handle webhook callbacks
 add_action('woocommerce_api_wc_smobilpay_webhook', 'wc_smobilpay_handle_webhook');
 
-function wc_smobilpay_handle_webhook() {
+function wc_smobilpay_handle_webhook()
+{
     $raw_post = file_get_contents('php://input');
     $data = json_decode($raw_post, true);
-    
-    if (!$data || !isset($data['merchantTransId'])) {
+
+    if (!$data || !isset($data['trid'])) {
         wp_die('Invalid webhook data', 'Webhook Error', array('response' => 400));
     }
 
-    $order_id = intval($data['merchantTransId']);
+    $order_id = intval($data['trid']);
     $order = wc_get_order($order_id);
 
     if (!$order) {
@@ -76,15 +80,54 @@ function wc_smobilpay_handle_webhook() {
     $payment_method = $order->get_payment_method();
     $gateway = WC()->payment_gateways->payment_gateways()[$payment_method] ?? null;
 
+    $errorMessages = [
+        "mtn_momo" => [
+            "703202" => [
+                "en" => "The customer rejected the transaction.",
+                "fr" => "Le client a rejeté la transaction.",
+            ],
+            "703201" => [
+                "en" => "The customer did not confirm the transaction.",
+                "fr" => "Le client n'a pas confirmé la transaction.",
+            ],
+            "704005" => [
+                "en" => "The transaction failed.",
+                "fr" => "La transaction a échoué.",
+            ],
+        ],
+
+        "orange_money" => [
+            "703202" => [
+                "en" => "The customer rejected the transaction.",
+                "fr" => "Le client a rejeté la transaction.",
+            ],
+            "703108" => [
+                "en" => "The customer has insufficient balance.",
+                "fr" => "Le client n'a pas un solde suffisant.",
+            ],
+            "703201" => [
+                "en" => "The customer did not confirm the transaction.",
+                "fr" => "Le client n'a pas confirmé la transaction.",
+            ],
+            "703000" => [
+                "en" => "The transaction failed.",
+                "fr" => "La transaction a échoué.",
+            ],
+        ],
+    ];
+
+
     if ($gateway && method_exists($gateway, 'verify_transaction')) {
         $ptn = get_post_meta($order_id, '_smobilpay_ptn', true);
-        
+
         if ($ptn) {
             $result = $gateway->verify_transaction($ptn);
-            
-            if ($result['success'] && $result['status'] === 'SUCCESS') {
+
+            if ($result['success'] && $result['data']['status'] === 'SUCCESS' && $result['data']['errorCode'] === '0') {
                 $order->payment_complete($ptn);
                 $order->add_order_note(sprintf('Payment verified via webhook. PTN: %s', $ptn));
+            } else if ($result['success'] && $result['data']['status'] === 'ERRORED') {
+                $order->update_status('failed', $errorMessages[$payment_method][$result['data']['errorCode']]['en']);
             }
         }
     }

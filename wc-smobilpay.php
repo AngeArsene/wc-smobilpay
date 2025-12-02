@@ -145,6 +145,7 @@ function wc_smobilpay_handle_webhook()
 
                 email_notify_client($order, $errorMessages[$payment_method]["0"]);
                 whatsapp_notify_client($order, $errorMessages[$payment_method]["0"]);
+                
             } else if ($result['success'] && $result['data'][0]['status'] === 'ERRORED') {
                 $order->update_status('failed', $errorMessages[$payment_method][$result['data'][0]['errorCode']]['en']);
 
@@ -187,9 +188,10 @@ function email_notify_client(\WC_Order $order, array $errorMessages)
 {
     $to = $order->get_billing_email();
 
-    $subject = sprintf("Order #%s – Payment Update | Commande n° %s – Mise à jour du paiement", $order->get_id());
+    $subject = sprintf("Order #%s – Payment Update | Commande n° %s – Mise à jour du paiement", $order->get_id(), $order->get_id());
 
     $variables = [
+        'logo_url' => wc_smobilpay_get_site_logo(),
         'id' => $order->get_id(),
         'first_name' => $order->get_billing_first_name(),
         'last_name' => $order->get_billing_last_name(),
@@ -210,4 +212,22 @@ function email_notify_client(\WC_Order $order, array $errorMessages)
     $headers = ['Content-Type: text/plain; charset=UTF-8'];
 
     wc_mail($to, $subject, $message, $headers);
+}
+
+
+function wc_smobilpay_get_site_logo() {
+    $custom_logo_id = get_theme_mod('custom_logo');
+
+    if ($custom_logo_id) {
+        return wp_get_attachment_image_url($custom_logo_id, 'full');
+    }
+
+    // fallback to site icon if available
+    $site_icon = get_site_icon_url();
+    if ($site_icon) {
+        return $site_icon;
+    }
+
+    // fallback to home URL if nothing else exists
+    return home_url();
 }

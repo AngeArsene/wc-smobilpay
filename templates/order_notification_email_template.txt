@@ -11,15 +11,18 @@
             <td align="center">
                <!-- Main Container -->
                <table width="600" border="0" cellspacing="0" cellpadding="0" style="background:#ffffff; border-radius:6px; overflow:hidden;">
+                  
                   <!-- Header -->
                   <tr>
-                     <td style="background:#000000; padding:20px; text-align:center;">
-                        <img src="https://allready.cm/wp-content/uploads/2024/04/allready-logo.png" width="140" alt="Allready Logo" style="display:block; margin:auto;">
+                     <td style="background:#DA3C3C; padding:20px; text-align:center;">
+                        <img src="[logo_url]" width="140" alt="Allready Logo" style="display:block; margin:auto;">
                      </td>
                   </tr>
+
                   <!-- Status Section -->
                   <tr>
                      <td style="padding:25px;">
+
                         <!-- Inject the dynamic status message here -->
                         <p style="font-size:16px; color:#000; font-weight:bold; margin:0 0 10px;">
                            [fr]
@@ -27,7 +30,9 @@
                         <p style="font-size:16px; color:#000; font-weight:bold; margin:0 0 20px;">
                            [en]
                         </p>
+
                         <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;">
+
                         <!-- Thank you -->
                         <p style="font-size:18px; font-weight:bold; margin:0 0 10px; color:#000;">
                            🌟 Merci pour votre commande !  
@@ -35,34 +40,43 @@
                         <p style="font-size:18px; font-weight:bold; margin:0 0 20px; color:#000;">
                            🌟 Thank you for your order!  
                         </p>
+
                         <!-- Order Summary -->
                         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+
                            <tr>
                               <td style="padding:5px 0; font-size:15px; color:#000;">🆔 <strong>ID :</strong></td>
                               <td style="padding:5px 0; font-size:15px; color:#000;" align="right">[id]</td>
                            </tr>
+
                            <tr>
                               <td style="padding:5px 0; font-size:15px; color:#000;">👤 <strong>Nom / Name :</strong></td>
                               <td style="padding:5px 0; font-size:15px; color:#000;" align="right">[first_name] [last_name]</td>
                            </tr>
+
                            <tr>
                               <td style="padding:5px 0; font-size:15px; color:#000;">📧 <strong>Email :</strong></td>
                               <td style="padding:5px 0; font-size:15px; color:#000;" align="right">[email]</td>
                            </tr>
+
                            <tr>
                               <td style="padding:5px 0; font-size:15px; color:#000;">📱 <strong>Tel :</strong></td>
                               <td style="padding:5px 0; font-size:15px; color:#000;" align="right">[phone_number]</td>
                            </tr>
+
                            <tr>
                               <td style="padding:5px 0; font-size:15px; color:#000;">🏙️ <strong>Ville / Town :</strong></td>
                               <td style="padding:5px 0; font-size:15px; color:#000;" align="right">[city]</td>
                            </tr>
+
                            <tr>
                               <td style="padding:5px 0; font-size:15px; color:#000;">📍 <strong>Quartier / Quarter :</strong></td>
                               <td style="padding:5px 0; font-size:15px; color:#000;" align="right">[neighborhood]</td>
                            </tr>
+
+                           <!-- PRODUCT LIST -->
                            <tr>
-                              <td style="padding: 15px 30px; background: #ffffff; border-radius: 8px; border: 1px solid #e5e5e5;">
+                              <td colspan="2" style="padding: 15px 30px; background: #ffffff; border-radius: 8px; border: 1px solid #e5e5e5;">
                                  <h3 style="margin: 0 0 10px 0; font-size: 18px; color: #333; font-weight: 600;">
                                     🛒 Détails des Produits / Product Details
                                  </h3>
@@ -71,16 +85,66 @@
                                  </div>
                               </td>
                            </tr>
+
+                           <!-- TOTALS SECTION -->
+                           <tr>
+                              <td colspan="2" style="padding-top:20px;">
+                                 <table width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa; border:1px solid #e0e0e0; border-radius:8px; padding:15px;">
+                                    
+                                    <tr>
+                                       <td style="padding:10px; font-size:15px; color:#000;">
+                                          💰 <strong>Total commande / Order Total :</strong>
+                                       </td>
+                                       <td style="padding:10px; font-size:15px; color:#000;" align="right">
+                                          [total]
+                                       </td>
+                                    </tr>
+
+                                    <tr>
+                                       <td style="padding:10px; font-size:15px; color:#000;">
+                                          🚚 <strong>Frais de livraison / Shipping Total :</strong>
+                                       </td>
+                                       <td style="padding:10px; font-size:15px; color:#000;" align="right">
+                                          [shipping_total]
+                                       </td>
+                                    </tr>
+
+                                 </table>
+                              </td>
+                           </tr>
+
+                           <!-- PAYMENT METHOD SECTION -->
+                           <tr>
+                              <td colspan="2" style="padding-top:20px;">
+                                 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f9f9; border:1px solid #ddd; border-radius:8px; padding:15px;">
+                                    
+                                    <tr>
+                                       <td style="padding:10px; font-size:15px; color:#000;">
+                                          💳 <strong>Méthode de paiement / Payment Method :</strong>
+                                       </td>
+                                       <td style="padding:10px; font-size:15px; color:#000;" align="right">
+                                          [payment_method]
+                                       </td>
+                                    </tr>
+
+                                 </table>
+                              </td>
+                           </tr>
+
                         </table>
+
                         <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;">
+
                         <!-- Footer -->
                         <p style="font-size:14px; color:#888; line-height:1.5; text-align:center; margin:0;">
                            Ceci est une notification automatique.  
                            <br/>
                            This is an automated notification.
                         </p>
+
                      </td>
                   </tr>
+
                </table>
             </td>
          </tr>

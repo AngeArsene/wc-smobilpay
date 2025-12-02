@@ -1,0 +1,17 @@
+❗ *[fr]*
+❗ *[en]*
+
+- *ID : [id]
+- *Nom* / Name : [first_name] [last_name]
+- *Email* : [email]
+- *Tel* : [phone_number]  
+- *Ville* / Town : [city]
+- *Quartier* / Quarter : [neighborhood]
+
+🛒 *Article(s) / Item(s):*
+[product_names]  
+
+💵 *Livraison / Shipping:* [total] FCFA
+💳 *Paiement / Payment:* [payment_method]  
+
+💰 *Total* : [shipping_total] FCFA

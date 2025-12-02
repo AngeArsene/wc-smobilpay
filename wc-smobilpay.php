@@ -83,40 +83,51 @@ function wc_smobilpay_handle_webhook()
 
     $errorMessages = [
         "mtn_momo" => [
+            "0" => [
+                "en" => "The payment was successful.",
+                "fr" => "Le paiement a été effectué avec succès.",
+            ],
             "703202" => [
-                "en" => "The customer rejected the transaction.",
-                "fr" => "Le client a rejeté la transaction.",
+                "en" => "You have rejected the transaction.",
+                "fr" => "Vous avez rejeté la transaction.",
             ],
             "703201" => [
-                "en" => "The customer did not confirm the transaction.",
-                "fr" => "Le client n'a pas confirmé la transaction.",
+                "en" => "You did not confirm the transaction.",
+                "fr" => "Vous n'avez pas confirmé la transaction.",
             ],
             "704005" => [
-                "en" => "The transaction failed.",
-                "fr" => "La transaction a échoué.",
+                "en" => "The payment failed.",
+                "fr" => "Le paiement a échoué.",
             ],
         ],
 
         "orange_money" => [
+            "0" => [
+                "en" => "The payment was successful.",
+                "fr" => "Le paiement a été effectué avec succès.",
+            ],
             "703202" => [
-                "en" => "The customer rejected the transaction.",
-                "fr" => "Le client a rejeté la transaction.",
+                "en" => "You have rejected the transaction.",
+                "fr" => "Vous avez rejeté la transaction.",
             ],
             "703108" => [
-                "en" => "The customer has insufficient balance.",
-                "fr" => "Le client n'a pas un solde suffisant.",
+                "en" => "You have insufficient balance.",
+                "fr" => "Vous n'avez pas un solde suffisant.",
             ],
             "703201" => [
                 "en" => "The customer did not confirm the transaction.",
-                "fr" => "Le client n'a pas confirmé la transaction.",
+                "fr" => "Vous n'avez pas confirmé la transaction.",
             ],
             "703000" => [
-                "en" => "The transaction failed.",
-                "fr" => "La transaction a échoué.",
+                "en" => "The payment failed.",
+                "fr" => "Le payment a échoué.",
             ],
         ],
     ];
 
+    // Include utility functions files
+    require_once WC_SMOBILPAY_PLUGIN_PATH . 'utils/templates.php';
+    require_once WC_SMOBILPAY_PLUGIN_PATH . 'utils/utilities.php';
 
     if ($gateway && method_exists($gateway, 'verify_transaction')) {
         $trid = $order_id;
@@ -128,17 +139,75 @@ function wc_smobilpay_handle_webhook()
                 file_put_contents(__DIR__ . '/data.json', wp_json_encode($result));
             }
 
-            var_dump($result['data'][0]['status']);
-            
             if ($result['success'] && $result['data'][0]['status'] === 'SUCCESS') {
                 $order->payment_complete($trid);
                 $order->add_order_note(sprintf('Payment verified via webhook. trid: %s', $trid));
+
+                email_notify_client($order, $errorMessages[$payment_method]["0"]);
+                whatsapp_notify_client($order, $errorMessages[$payment_method]["0"]);
             } else if ($result['success'] && $result['data'][0]['status'] === 'ERRORED') {
                 $order->update_status('failed', $errorMessages[$payment_method][$result['data'][0]['errorCode']]['en']);
+
+                email_notify_client($order, $errorMessages[$payment_method][$result['data'][0]['errorCode']]);
+                whatsapp_notify_client($order, $errorMessages[$payment_method][$result['data'][0]['errorCode']]);
             }
         }
     }
 
     status_header(200);
     die('OK');
+}
+
+function whatsapp_notify_client(bool|\WC_Order|\WC_Order_Refund $order, array $errorMessages)
+{
+    $phone_number = get_phone_number(['phone_number' => $order->get_billing_phone()]);
+
+    $variables = [
+        'id' => $order->get_id(),
+        'first_name' => $order->get_billing_first_name(),
+        'last_name' => $order->get_billing_last_name(),
+        'email' => $order->get_billing_email(),
+        'phone_number' => $phone_number,
+        'city' => $order->get_billing_city(),
+        'neighborhood' => $order->get_billing_address_1(),
+        'product_names' => format_order_items($order),
+        'payment_method' => wc_get_payment_gateway_by_order($order)->get_title(),
+        'shipping_total' => number_format($order->get_total(), 0, '', ''),
+        'total' => number_format($order->get_shipping_total(), 0, '', ''),
+        'fr' => $errorMessages['fr'],
+        'en' => $errorMessages['en'],
+    ];
+
+    $message = render('order_notification_template', $variables);
+
+    send_whatsapp_message($phone_number, $message);
+}
+
+function email_notify_client(\WC_Order $order, array $errorMessages)
+{
+    $to = $order->get_billing_email();
+
+    $subject = sprintf("Order #%s – Payment Update | Commande n° %s – Mise à jour du paiement", $order->get_id());
+
+    $variables = [
+        'id' => $order->get_id(),
+        'first_name' => $order->get_billing_first_name(),
+        'last_name' => $order->get_billing_last_name(),
+        'email' => $order->get_billing_email(),
+        'phone_number' => get_phone_number(['phone_number' => $order->get_billing_phone()]),
+        'city' => $order->get_billing_city(),
+        'neighborhood' => $order->get_billing_address_1(),
+        'product_names' => format_order_items($order),
+        'payment_method' => wc_get_payment_gateway_by_order($order)->get_title(),
+        'shipping_total' => number_format($order->get_total(), 0, '', ''),
+        'total' => number_format($order->get_shipping_total(), 0, '', ''),
+        'fr' => $errorMessages['fr'],
+        'en' => $errorMessages['en'],
+    ];
+
+    $message  = render('order_notification_email_template', $variables);
+
+    $headers = ['Content-Type: text/plain; charset=UTF-8'];
+
+    wc_mail($to, $subject, $message, $headers);
 }

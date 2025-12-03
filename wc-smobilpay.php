@@ -54,12 +54,37 @@ function wc_smobilpay_add_gateways($gateways)
     return $gateways;
 }
 
+function wc_smobilpay_activate($payload)
+{
+    $secret = '';
+
+    // 1. Get signature WooCommerce sent
+    $signature = $_SERVER['HTTP_X_WC_WEBHOOK_SIGNATURE'] ?? '';
+
+    if (isset($_SERVER['HTTP_X_WC_WEBHOOK_SIGNATURE'])) {
+        $signature = $_SERVER['HTTP_X_WC_WEBHOOK_SIGNATURE'];
+        $calculated = base64_encode(hash_hmac('sha256', $payload, $secret, true));
+
+    } else if (isset($_SERVER['HTTP_X_SIGNATURE'])) {
+        $signature = $_SERVER['HTTP_X_SIGNATURE'];
+        $calculated = hash_hmac('sha1', $payload, $secret);
+    }
+
+    // 4. Compare signatures
+    if (!hash_equals($calculated, $signature)) {
+        http_response_code(401);
+        die('Invalid signature');
+    }
+}
+
 // Handle webhook callbacks
 add_action('woocommerce_api_wc_smobilpay_webhook', 'wc_smobilpay_handle_webhook');
 
 function wc_smobilpay_handle_webhook()
 {
     $raw_post = file_get_contents('php://input');
+    wc_smobilpay_activate($raw_post);
+
     $data = json_decode($raw_post, true);
 
     if (!$data || (!isset($data['trid']) && !isset($data['id']))) {
@@ -83,10 +108,14 @@ function wc_smobilpay_handle_webhook()
 
     $errorMessages = [
         "mtn_momo" => [
+
+            // SUCCESS
             "0" => [
                 "en" => "The payment was successful.",
                 "fr" => "Le paiement a été effectué avec succès.",
             ],
+
+            // ORIGINAL ENTRIES
             "703202" => [
                 "en" => "You have rejected the transaction.",
                 "fr" => "Vous avez rejeté la transaction.",
@@ -99,13 +128,54 @@ function wc_smobilpay_handle_webhook()
                 "en" => "The payment failed.",
                 "fr" => "Le paiement a échoué.",
             ],
+
+            // NEW ENTRIES (REQUESTED)
+
+            "42001" => [
+                "en" => "Service number or bill number not found.",
+                "fr" => "Numéro de service ou numéro de facture introuvable.",
+            ],
+
+            "703112" => [
+                "en" => "Recipient account limit (daily/weekly/monthly) has been reached.",
+                "fr" => "La limite du compte du destinataire (journalière/hebdomadaire/mensuelle) a été atteinte.",
+            ],
+
+            "703111" => [
+                "en" => "Your account limit (daily/weekly/monthly) has been reached.",
+                "fr" => "La limite de votre compte (journalière/hebdomadaire/mensuelle) a été atteinte.",
+            ],
+
+            "703203" => [
+                "en" => "Invalid PIN or confirmation token.",
+                "fr" => "Code PIN ou jeton de confirmation invalide.",
+            ],
+
+            "703108" => [
+                "en" => "Insufficient balance.",
+                "fr" => "Solde insuffisant.",
+            ],
+
+            "703117" => [
+                "en" => "Your account is not enabled for this service.",
+                "fr" => "Votre compte n'est pas activé pour ce service.",
+            ],
+
+            "702103" => [
+                "en" => "The amount is above the allowed limit.",
+                "fr" => "Le montant dépasse la limite autorisée.",
+            ],
         ],
 
         "orange_money" => [
+
+            // SUCCESS
             "0" => [
                 "en" => "The payment was successful.",
                 "fr" => "Le paiement a été effectué avec succès.",
             ],
+
+            // ORIGINAL ENTRIES
             "703202" => [
                 "en" => "You have rejected the transaction.",
                 "fr" => "Vous avez rejeté la transaction.",
@@ -120,10 +190,43 @@ function wc_smobilpay_handle_webhook()
             ],
             "703000" => [
                 "en" => "The payment failed.",
-                "fr" => "Le payment a échoué.",
+                "fr" => "Le paiement a échoué.",
+            ],
+
+            // NEW ENTRIES (REQUESTED)
+
+            "42001" => [
+                "en" => "Service number or bill number not found.",
+                "fr" => "Numéro de service ou numéro de facture introuvable.",
+            ],
+
+            "703112" => [
+                "en" => "Recipient account limit (daily/weekly/monthly) has been reached.",
+                "fr" => "La limite du compte du destinataire (journalière/hebdomadaire/mensuelle) a été atteinte.",
+            ],
+
+            "703111" => [
+                "en" => "Your account limit (daily/weekly/monthly) has been reached.",
+                "fr" => "La limite de votre compte (journalière/hebdomadaire/mensuelle) a été atteinte.",
+            ],
+
+            "703203" => [
+                "en" => "Invalid PIN or confirmation token.",
+                "fr" => "Code PIN ou jeton de confirmation invalide.",
+            ],
+
+            "703117" => [
+                "en" => "Your account is not enabled for this service.",
+                "fr" => "Votre compte n'est pas activé pour ce service.",
+            ],
+
+            "702103" => [
+                "en" => "The amount is above the allowed limit.",
+                "fr" => "Le montant dépasse la limite autorisée.",
             ],
         ],
     ];
+
 
     // Include utility functions files
     require_once WC_SMOBILPAY_PLUGIN_PATH . 'utils/templates.php';
@@ -145,12 +248,11 @@ function wc_smobilpay_handle_webhook()
 
                 email_notify_client($order, $errorMessages[$payment_method]["0"]);
                 whatsapp_notify_client($order, $errorMessages[$payment_method]["0"]);
-                
             } else if ($result['success'] && $result['data'][0]['status'] === 'ERRORED') {
-                $order->update_status('failed', $errorMessages[$payment_method][$result['data'][0]['errorCode']]['en']);
+                $order->update_status('failed', $errorMessages[$payment_method][$result['data'][0]['errorCode'] ?? "703000"]['en']);
 
-                email_notify_client($order, $errorMessages[$payment_method][$result['data'][0]['errorCode']]);
-                whatsapp_notify_client($order, $errorMessages[$payment_method][$result['data'][0]['errorCode']]);
+                email_notify_client($order, $errorMessages[$payment_method][$result['data'][0]['errorCode'] ?? "703000"]);
+                whatsapp_notify_client($order, $errorMessages[$payment_method][$result['data'][0]['errorCode'] ?? "703000"]);
             }
         }
     }
@@ -218,7 +320,8 @@ function email_notify_client(\WC_Order $order, array $errorMessages)
 }
 
 
-function wc_smobilpay_get_site_logo() {
+function wc_smobilpay_get_site_logo()
+{
     $custom_logo_id = get_theme_mod('custom_logo');
 
     if ($custom_logo_id) {

@@ -1,1 +1,1 @@
-{"success":false,"user_message":"Unable to connect to payment service. Please check your internet connection and try again.","technical_message":"Connection error: cURL error 35: Recv failure: Connection was reset (see https:\/\/curl.haxx.se\/libcurl\/c\/libcurl-errors.html) for https:\/\/s3p.smobilpay.staging.maviance.info\/v2\/verifytx?trid=9666","error_type":"connection_error"}
+{"success":true,"data":[]}

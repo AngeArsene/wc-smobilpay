@@ -102,9 +102,15 @@ class WC_Smobilpay_API
                 'error_type' => 'connection_error'
             ];
         } catch (Exception | RequestException $e) {
+            // Get raw JSON from the API error response
+            $errorBody = $e->getResponse()->getBody()->getContents();
+
+            // Decode JSON
+            $errorData = json_decode($errorBody, true);
+            
             return [
                 'success' => false,
-                'user_message' => 'An unexpected error occurred. Please try again.',
+                'user_message' => $errorData['devMsg'] ?? 'Unknown error',
                 'technical_message' => 'Exception: ' . $e->getMessage(),
                 'error_type' => 'general_error'
             ];
@@ -135,9 +141,15 @@ class WC_Smobilpay_API
                 'error_type' => 'connection_error'
             ];
         } catch (Exception | RequestException $e) {
+            // Get raw JSON from the API error response
+            $errorBody = $e->getResponse()->getBody()->getContents();
+
+            // Decode JSON
+            $errorData = json_decode($errorBody, true);
+            
             return [
                 'success' => false,
-                'user_message' => 'An unexpected error occurred. Please try again.',
+                'user_message' => $errorData['devMsg'] ?? 'Unknown error',
                 'technical_message' => 'Exception: ' . $e->getMessage(),
                 'error_type' => 'general_error'
             ];

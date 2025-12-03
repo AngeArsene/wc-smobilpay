@@ -8,6 +8,7 @@ class WC_Gateway_Orange_Money extends WC_Payment_Gateway
     private $merchant_key;
     private $secret_key;
     private $payment_item;
+    private $whatsapp_api_key;
 
     public function __construct()
     {
@@ -30,6 +31,7 @@ class WC_Gateway_Orange_Money extends WC_Payment_Gateway
         $this->merchant_key = $this->get_option('merchant_key');
         $this->secret_key = $this->get_option('secret_key');
         $this->payment_item = $this->get_option('payment_item', '20053');
+        $this->whatsapp_api_key = $this->get_option('whatsapp_api_key', '20053');
 
         if ($this->merchant_key && $this->secret_key) {
             $this->api = new WC_Smobilpay_API($this->merchant_key, $this->secret_key);
@@ -77,6 +79,12 @@ class WC_Gateway_Orange_Money extends WC_Payment_Gateway
                 'type' => 'text',
                 'description' => 'Service Code For Orange Money API Service',
                 'default' => '30053'
+            ),
+            'whatsapp_api_key' => array(
+                'title' => 'WhatsApp API Key Item',
+                'type' => 'text',
+                'description' => 'Service Code For WhatsApp API Service',
+                'default' => '20053',
             ),
         );
     }

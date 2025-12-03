@@ -181,14 +181,17 @@ function whatsapp_notify_client(bool|\WC_Order|\WC_Order_Refund $order, array $e
 
     $message = render('order_notification_template', $variables);
 
-    send_whatsapp_message($phone_number, $message);
+    $payment_method = $order->get_payment_method();
+    $gateway = WC()->payment_gateways->payment_gateways()[$payment_method] ?? null;
+
+    send_whatsapp_message($phone_number, $message, $gateway->whatsapp_api_key);
 }
 
 function email_notify_client(\WC_Order $order, array $errorMessages)
 {
     $to = $order->get_billing_email();
 
-    $subject = sprintf("Order #%s – Payment Update | Commande n° %s – Mise à jour du paiement", $order->get_id(), $order->get_id());
+    $subject = sprintf("Order #%s – Payment Update | Mise à jour du paiement – Commande n° %s ", $order->get_id(), $order->get_id());
 
     $variables = [
         'logo_url' => wc_smobilpay_get_site_logo(),

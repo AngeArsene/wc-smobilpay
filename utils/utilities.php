@@ -1,7 +1,6 @@
 <?php declare(strict_types=1);
 
 use GuzzleHttp\Client;
-use WoowaWebhooks\Services\WhatsAppMessenger;
 
 /**
  * Retrieves the phone number from the provided cart URL.
@@ -254,13 +253,13 @@ function is_seven_days_before(string $date = ''): bool
  * @param string $message
  * @return array|WP_Error
  */
-function send_whatsapp_message( $phone_no, $message ) {
+function send_whatsapp_message( $phone_no, $message, $whatsapp_api_key ) {
 
     $url = 'https://notifapi.com/send_message';
 
     $body = [
         'phone_no' => $phone_no,
-        'key'      => '', // replace with your real key or gateway setting
+        'key'      => $whatsapp_api_key, // replace with your real key or gateway setting
         'message'  => $message,
     ];
 

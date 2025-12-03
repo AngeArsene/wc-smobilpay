@@ -5,10 +5,11 @@ class WC_Gateway_MTN_MoMo extends WC_Payment_Gateway
 
     private $api;
 
+    public $whatsapp_api_key;
+
     private $merchant_key;
     private $secret_key;
     private $payment_item;
-    private $whatsapp_api_key;
 
     public function __construct()
     {
@@ -83,7 +84,7 @@ class WC_Gateway_MTN_MoMo extends WC_Payment_Gateway
             ),
             'whatsapp_api_key' => array(
                 'title' => 'WhatsApp API Key Item',
-                'type' => 'text',
+                'type' => 'password',
                 'description' => 'Service Code For WhatsApp API Service',
                 'default' => '20053',
             ),

@@ -126,7 +126,7 @@ class WC_Gateway_Orange_Money extends WC_Payment_Gateway
         $payable_result = $this->api->get_payable_item($this->payment_item);
 
         if (!$payable_result['success']) {
-            wc_add_notice('Payment initialization failed. Please try again.', 'error');
+            wc_add_notice($payable_result['user_message'] ?? 'Payment initialization failed. Please try again.', 'error');
             return array('result' => 'failure');
         }
 
@@ -148,7 +148,7 @@ class WC_Gateway_Orange_Money extends WC_Payment_Gateway
         $quote_result = $this->api->initiate_transaction($quote_data);
 
         if (!$quote_result['success']) {
-            wc_add_notice('Transaction initiation failed: ' . ($quote_result['message'] ?? 'Unknown error'), 'error');
+            wc_add_notice($quote_result['user_message'] ?? 'Transaction initiation failed: ' . ($quote_result['message'] ?? 'Unknown error'), 'error');
             return array('result' => 'failure');
         }
 
@@ -175,7 +175,7 @@ class WC_Gateway_Orange_Money extends WC_Payment_Gateway
         $collect_result = $this->api->finalize_transaction($collect_data);
 
         if (!$collect_result['success']) {
-            wc_add_notice('Payment collection failed: ' . ($collect_result['message'] ?? 'Unknown error'), 'error');
+            wc_add_notice($collect_result['user_message'] ?? 'Payment collection failed: ' . ($collect_result['message'] ?? 'Unknown error'), 'error');
             return array('result' => 'failure');
         }
 

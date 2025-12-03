@@ -3,6 +3,8 @@
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Request;
 
 class WC_Smobilpay_API
@@ -76,21 +78,37 @@ class WC_Smobilpay_API
      */
     private function send_get($path, $queryParams = [])
     {
-        $authHeader = $this->generateS3PAuthHeader("GET", $path, $queryParams);
+        try {
+            $authHeader = $this->generateS3PAuthHeader("GET", $path, $queryParams);
 
-        $url = $this->api_url . $path;
-        if (!empty($queryParams)) {
-            $url .= '?' . http_build_query($queryParams);
+            $url = $this->api_url . $path;
+            if (!empty($queryParams)) {
+                $url .= '?' . http_build_query($queryParams);
+            }
+
+            $request = new Request("GET", $url, [
+                "Authorization" => $authHeader,
+                "Content-Type" => "application/json"
+            ]);
+
+            $response = $this->client->send($request, ['timeout' => 30]);
+
+            return $this->handle_response($response);
+        } catch (ConnectException $e) {
+            return [
+                'success' => false,
+                'user_message' => 'Unable to connect to payment service. Please check your internet connection and try again.',
+                'technical_message' => 'Connection error: ' . $e->getMessage(),
+                'error_type' => 'connection_error'
+            ];
+        } catch (Exception | RequestException $e) {
+            return [
+                'success' => false,
+                'user_message' => 'An unexpected error occurred. Please try again.',
+                'technical_message' => 'Exception: ' . $e->getMessage(),
+                'error_type' => 'general_error'
+            ];
         }
-
-        $request = new Request("GET", $url, [
-            "Authorization" => $authHeader,
-            "Content-Type" => "application/json"
-        ]);
-
-        $response = $this->client->send($request, ['timeout' => 30]);
-
-        return $this->handle_response($response);
     }
 
     /**
@@ -98,16 +116,32 @@ class WC_Smobilpay_API
      */
     private function send_post($path, $bodyParams = [])
     {
-        $authHeader = $this->generateS3PAuthHeader("POST", $path, [], $bodyParams);
+        try {
+            $authHeader = $this->generateS3PAuthHeader("POST", $path, [], $bodyParams);
 
-        $request = new Request("POST", $this->api_url . $path, [
-            "Authorization" => $authHeader,
-            "Content-Type" => "application/json"
-        ], json_encode($bodyParams));
+            $request = new Request("POST", $this->api_url . $path, [
+                "Authorization" => $authHeader,
+                "Content-Type" => "application/json"
+            ], json_encode($bodyParams));
 
-        $response = $this->client->send($request, ['timeout' => 30]);
+            $response = $this->client->send($request, ['timeout' => 30]);
 
-        return $this->handle_response($response);
+            return $this->handle_response($response);
+        } catch (ConnectException $e) {
+            return [
+                'success' => false,
+                'user_message' => 'Unable to connect to payment service. Please check your internet connection and try again.',
+                'technical_message' => 'Connection error: ' . $e->getMessage(),
+                'error_type' => 'connection_error'
+            ];
+        } catch (Exception | RequestException $e) {
+            return [
+                'success' => false,
+                'user_message' => 'An unexpected error occurred. Please try again.',
+                'technical_message' => 'Exception: ' . $e->getMessage(),
+                'error_type' => 'general_error'
+            ];
+        }
     }
 
     // === Public API methods ===
@@ -158,7 +192,7 @@ class WC_Smobilpay_API
 
         return [
             'success' => false,
-            'message' => 'Error: ' . $data['message'] ?? 'API request failed',
+            'message' => 'Error: ' . $data['devMsg'] ?? 'API request failed',
             'data' => $data,
         ];
     }

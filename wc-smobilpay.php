@@ -57,7 +57,7 @@ function wc_smobilpay_add_gateways($gateways)
 function wc_smobilpay_verify($payload_url)
 {
     $secret = '';
-    $payload = file_get_contents('php://input');
+    $payload = file_get_contents($payload_url);
 
     // 1. Get signature WooCommerce sent
     $signature = $_SERVER['HTTP_X_WC_WEBHOOK_SIGNATURE'] ?? '';

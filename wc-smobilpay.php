@@ -54,9 +54,10 @@ function wc_smobilpay_add_gateways($gateways)
     return $gateways;
 }
 
-function wc_smobilpay_activate($payload)
+function wc_smobilpay_verify($payload_url)
 {
     $secret = '';
+    $payload = file_get_contents('php://input');
 
     // 1. Get signature WooCommerce sent
     $signature = $_SERVER['HTTP_X_WC_WEBHOOK_SIGNATURE'] ?? '';
@@ -75,6 +76,8 @@ function wc_smobilpay_activate($payload)
         http_response_code(401);
         die('Invalid signature');
     }
+
+    return $payload;
 }
 
 // Handle webhook callbacks
@@ -82,8 +85,7 @@ add_action('woocommerce_api_wc_smobilpay_webhook', 'wc_smobilpay_handle_webhook'
 
 function wc_smobilpay_handle_webhook()
 {
-    $raw_post = file_get_contents('php://input');
-    wc_smobilpay_activate($raw_post);
+    $raw_post = wc_smobilpay_verify('php://input');
 
     $data = json_decode($raw_post, true);
 

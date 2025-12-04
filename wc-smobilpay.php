@@ -241,7 +241,7 @@ function wc_smobilpay_handle_webhook()
             $result = $gateway->verify_transaction($trid);
 
             if (!empty($result)) {
-                file_put_contents(__DIR__ . '/data.json', wp_json_encode($result));
+                error_log('Smobilpay Webhook Verification Result: ' . json_encode($data, JSON_PRETTY_PRINT));
             }
 
             if ($result['success'] && $result['data'][0]['status'] === 'SUCCESS') {

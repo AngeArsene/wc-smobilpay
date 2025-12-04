@@ -192,7 +192,7 @@ class WC_Smobilpay_API
 
         // Save readable JSON for debugging
         if (!empty($data)) {
-            file_put_contents(__DIR__ . '/data.json', json_encode($data, JSON_PRETTY_PRINT));
+            error_log('Smobilpay API Response ' . json_encode($data, JSON_PRETTY_PRINT));
         }
 
         if ($status_code >= 200 && $status_code < 300) {

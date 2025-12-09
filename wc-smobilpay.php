@@ -285,7 +285,7 @@ if (! function_exists('whatsapp_notify_client')) {
 
         $phone_number = get_phone_number(['phone_number' => $order->get_billing_phone()]);
 
-        $variables = [
+        $variables = array (
             'id' => $order->get_id(),
             'first_name' => $order->get_billing_first_name(),
             'last_name' => $order->get_billing_last_name(),
@@ -299,14 +299,14 @@ if (! function_exists('whatsapp_notify_client')) {
             'total' => number_format($order->get_shipping_total(), 0, '', ''),
             'fr' => $errorMessages['fr'],
             'en' => $errorMessages['en'],
-        ];
+        );
 
         $message = render('order_notification_template', $variables);
 
         $payment_method = $order->get_payment_method();
         $gateway = WC()->payment_gateways->payment_gateways()[$payment_method] ?? null;
 
-        send_whatsapp_message($phone_number, $message, $gateway->whatsapp_api_key);
+        send_whatsapp_message($phone_number, $message, (string)$gateway->whatsapp_api_key);
     }
 }
 
@@ -320,7 +320,7 @@ if (! function_exists('email_notify_client')) {
 
         $subject = sprintf("Order #%s – Payment Update | Mise à jour du paiement – Commande n° %s ", $order->get_id(), $order->get_id());
 
-        $variables = [
+        $variables = array (
             'logo_url' => wc_smobilpay_get_site_logo(),
             'id' => $order->get_id(),
             'first_name' => $order->get_billing_first_name(),
@@ -335,7 +335,7 @@ if (! function_exists('email_notify_client')) {
             'total' => number_format($order->get_shipping_total(), 0, '', ''),
             'fr' => $errorMessages['fr'],
             'en' => $errorMessages['en'],
-        ];
+        );
 
         $message  = render('order_notification_email_template', $variables);
 
